@@ -1,0 +1,14 @@
+# project
+target/
+.lein-repl-history
+.lein-failures
+.nrepl-port
+logs/
+*.log
+.dir-locals.el
+out/
+
+# IDE
+*.swp
+.idea/
+*.iml
