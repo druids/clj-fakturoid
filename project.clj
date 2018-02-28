@@ -1,4 +1,4 @@
-(defproject clj-fakturoid "0.0.0"
+(defproject clj-fakturoid "0.1.0"
   :description "A client for Fakturoid API based on clj-http.client"
   :url "https://github.com/druids/clj-fakturoid"
   :license {:name "MIT License"
