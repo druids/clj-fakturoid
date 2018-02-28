@@ -36,7 +36,7 @@
 
 
 (deftest create-subject-test
-  (testing "should return account"
+  (testing "should return subject"
     (with-fake-routes (json-handler "/accounts/slug/subjects.json" subject-response 201 :post)
       (let [response (create-subject "slug" subject)]
         (is (= 201 (:status response)))

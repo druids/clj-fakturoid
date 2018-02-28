@@ -61,3 +61,17 @@
       (http/post (merge (->http-opts credentials)
                         {:form-params subject}))
       parse-4xx-response))
+
+
+(defn create-invoice
+  "Create new `invoice` in address book"
+  [host credentials slug invoice]
+  {:pre [(not (blank? host))]}
+  (-> host
+      str
+      url/url
+      (update :path str "/accounts/" slug "/invoices.json")
+      str
+      (http/post (merge (->http-opts credentials)
+                        {:form-params invoice}))
+      parse-4xx-response))
