@@ -58,3 +58,12 @@ Creates new subject in the addressbook.
 (:body (fakturoid/create-subject host [username token] slug {:street "Masarykova 1", :name "foo", ...}))
 {:id 1, :street "Masarykova 1", :name "foo",...}
 ```
+
+### create-invoice
+Creates new invoice.
+
+
+```clojure
+(:body (fakturoid/create-invoice host [username token] slug {:variable_symbol "100012014", ...}))
+{:id 1, :variable_symbol "100012014",...}
+```
