@@ -49,3 +49,12 @@ nil
 (:body-unparsed response)
 "{\"I'm not a JSON\"}"
 ```
+
+### create-subject
+Creates new subject in the addressbook.
+
+
+```clojure
+(:body (fakturoid/create-subject host [username token] slug {:street "Masarykova 1", :name "foo", ...}))
+{:id 1, :street "Masarykova 1", :name "foo",...}
+```
