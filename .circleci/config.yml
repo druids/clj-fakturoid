@@ -1,0 +1,23 @@
+version: 2
+
+jobs:
+  build:
+    working_directory: ~/clj-fakturoid
+    docker:
+      - image: circleci/clojure:lein-2.8.1
+    environment:
+      LEIN_ROOT: nbd
+      LC_ALL: C
+    steps:
+      - checkout
+      - restore_cache:
+          key: clj-fakturoid-{{ checksum "project.clj" }}
+      - run: lein deps
+      - save_cache:
+          paths:
+            - ~/.m2
+            - ~/.lein
+          key: clj-fakturoid-{{ checksum "project.clj" }}
+      - run: lein test
+      - run: lein cloverage --fail-threshold 95
+      - run: lein kibit
