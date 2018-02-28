@@ -40,11 +40,24 @@
    Where `credentials` is a tuple with `username` and API `token`."
   [host credentials slug]
   {:pre [(not (blank? host))]}
-  (let [[username token] credentials]
-    (-> host
-        str
-        url/url
-        (update :path str "/accounts/" slug "/account.json")
-        str
-        (http/get (->http-opts credentials))
-        parse-4xx-response)))
+  (-> host
+      str
+      url/url
+      (update :path str "/accounts/" slug "/account.json")
+      str
+      (http/get (->http-opts credentials))
+      parse-4xx-response))
+
+
+(defn create-subject
+  "Create new `subject` in address book"
+  [host credentials slug subject]
+  {:pre [(not (blank? host))]}
+  (-> host
+      str
+      url/url
+      (update :path str "/accounts/" slug "/subjects.json")
+      str
+      (http/post (merge (->http-opts credentials)
+                        {:form-params subject}))
+      parse-4xx-response))
