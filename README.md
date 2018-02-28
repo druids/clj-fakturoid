@@ -12,7 +12,7 @@ Leiningen/Boot
 --------------
 
 ```clojure
-[clj-fakturoid "0.1.0"]
+[clj-fakturoid "0.2.0"]
 ```
 
 
