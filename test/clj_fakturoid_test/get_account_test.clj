@@ -72,4 +72,12 @@
   (testing "should return not found"
     (with-fake-routes (json-handler "/accounts/nonexisting/account.json" {} 404)
       (let [response (get-account "nonexisting")]
-        (is (= 404 (:status response)))))))
+        (is (= 404 (:status response))))))
+
+  (testing "should return 499, with unparsed body"
+    (with-fake-routes {(str fakturoid-host "/accounts/slug/account.json")
+                       (fn [_] {:status 499, :body "---"})}
+      (let [response (get-account "slug")]
+        (is (= 499 (:status response)))
+        (is (-> response :body nil?))
+        (is ( = "---" (:body-unparsed response)))))))
