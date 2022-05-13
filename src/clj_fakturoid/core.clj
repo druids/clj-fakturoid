@@ -92,7 +92,8 @@
       str
       (http/get (merge (->http-opts credentials)
                        {:query-params query}))
-      parse-4xx-response))
+      parse-4xx-response
+      :body))
 
 (defn in-range?
   "Returns `true` if a given point is in the range
@@ -188,7 +189,6 @@
   (let [{:keys [today since until query]}
         (report-tax-filter now)]
     (->> (get-invoices host [username token] slug query)
-         :body
          (filter-by-taxable-fulfillment-due since until)
          (generate-fn personal-data today since)
          xml/emit-str

@@ -19,5 +19,5 @@ jobs:
             - ~/.lein
           key: clj-fakturoid-{{ checksum "project.clj" }}
       - run: lein test
-      - run: lein cloverage --fail-threshold 95
+      - run: lein cloverage --fail-threshold 85
       - run: lein kibit
