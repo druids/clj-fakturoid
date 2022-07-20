@@ -111,25 +111,70 @@
   [n]
   (Math/round (float (with-precision 2 n))))
 
+(defn- calculate-sums
+  [invoices]
+  (reduce (fn [acc {:keys [native_subtotal native_total]}]
+            (-> acc
+                (update :total + (bigdec native_subtotal))
+                (update :tax + (- (bigdec native_total)
+                                  (bigdec native_subtotal)))))
+          {:total 0M, :tax 0M}
+          invoices))
+
 (defn dphdp3-report
-  [personal-data today since invoices]
-  (let [{:keys [total tax]}
-        (reduce (fn [acc {:keys [native_subtotal native_total]}]
+  [personal-data today since small-costs invoices]
+  (let [{:keys [total tax]} (calculate-sums invoices)
+        {:keys [cost-base cost-tax]}
+        (reduce (fn [acc {:keys [base tax]}]
                   (-> acc
-                      (update :total + (bigdec native_subtotal))
-                      (update :tax + (- (bigdec native_total)
-                                        (bigdec native_subtotal)))))
-                {:total 0M, :tax 0M}
-                invoices)]
+                      (update :cost-base + base)
+                      (update :cost-tax + tax)))
+                {:cost-base 0M, :cost-tax 0M}
+                small-costs)]
+    (merge (assoc personal-data
+                  :today today
+                  :since since
+                  :veta1 {:obrat23 (math-round total)
+                          :dan23 (math-round tax)}
+                  :veta6 {:dan_zocelk (math-round tax)
+                          :dano 0
+                          :dano_da (math-round (- tax cost-tax))
+                          :dano_no 0
+                          :odp_zocelk (math-round cost-tax)})
+           (when (pos? cost-tax)
+             {:veta4 {:odp_sum_nar (math-round cost-tax)
+                      :odp_tuz23_nar (math-round cost-tax)
+                      :pln23 (math-round cost-base)}}))))
+
+(defn dphkh1-report
+  [personal-data today since small-costs invoices]
+  (let [{:keys [total]} (calculate-sums invoices)
+        veta-b3 (when (seq small-costs)
+                  (reduce (fn [acc {:keys [base tax]}]
+                            (-> acc
+                                (update :zakl_dane1 + base)
+                                (update :dan1 + tax)))
+                          {:zakl_dane1 0M
+                           :dan1 0M}
+                          small-costs))]
     (assoc personal-data
            :today today
            :since since
-           :veta1 {:obrat23 (math-round total), :dan23 (math-round tax)}
-           :veta6 {:dan_zocelk (math-round tax)
-                   :dano 0
-                   :dano_da (math-round tax)
-                   :dano_no 0
-                   :odp_zocelk 0})))
+           :veta-a4 (map-indexed (fn [i invoice]
+                                   {:c_radku (inc i)
+                                    :dic_odb (:client_vat_no invoice)
+                                    :c_evid_dd (:number invoice)
+                                    :dppd (LocalDate/parse (:taxable_fulfillment_due invoice))
+                                    :zakl_dane1 (:native_subtotal invoice)
+                                    :dan1 (- (bigdec (:native_total invoice))
+                                             (bigdec (:native_subtotal invoice)))
+                                    :kod_rezim_pl "0"
+                                    :zdph_44 "N"})
+                                 invoices)
+           :veta-c {:obrat23 total
+                    :pln23 (if (some? veta-b3) (:zakl_dane1 veta-b3) 0)}
+           :veta-b3 veta-b3)))
+
 
 (def date-formatter (DateTimeFormatter/ofPattern "dd.MM.YYYY"))
 
@@ -137,14 +182,17 @@
   [date]
   (.format date date-formatter))
 
-(def vetad-keys
+(def vetad-dp3-keys
   [:c_okec :d_poddp :dapdph_forma :dokument :k_uladis :mesic :rok :trans :typ_platce])
+
+(def vetad-kh1-keys
+  [:d_poddp :dapdph_forma :dokument :k_uladis :mesic :rok :trans :typ_platce])
 
 (def vetap-keys
   [:c_orient :c_pop :c_telef :c_ufo :c_pracufo :dic :email :jmeno :naz_obce :prijmeni :psc :stat :titul :typ_ds :ulice])
 
 (defn dphdp3-report-xml
-  [{:keys [veta1 veta6 today since] :as personal-info}]
+  [{:keys [veta1 veta6 veta4 today since] :as personal-info}]
   (let [until
         (.with since
                (TemporalAdjusters/lastDayOfMonth))]
@@ -153,24 +201,58 @@
      :content
      [{:tag :DPHDP3
        :attrs {:verzePis "01.02"}
-       :content [{:tag :VetaD, :attrs (merge {:zdobd_od (format-date since)
-                                              :zdobd_do (format-date until)
-                                              :dapdph_forma "B"
-                                              :d_poddp (format-date today)
-                                              :k_uladis "DPH"
-                                              :typ_platce "P"
-                                              :dokument "DP3"
-                                              :trans "A"
-                                              :mesic (-> since .getMonth .getValue)
-                                              :rok (.getYear today)}
-                                             (select-keys personal-info vetad-keys))
-                  :content []}
-                 {:tag :VetaP, :attrs (merge {:typ_ds "F"}
-                                             (select-keys personal-info vetap-keys))
-                  :content []}
-                 {:tag :Veta1, :attrs veta1, :content []}
-                 {:tag :Veta4, :attrs {:odp_sum_nar 0}, :content []}
-                 {:tag :Veta6, :attrs veta6, :content []}]}]}))
+       :content (concat [{:tag :VetaD, :attrs (merge {:zdobd_od (format-date since)
+                                                      :zdobd_do (format-date until)
+                                                      :dapdph_forma "B"
+                                                      :d_poddp (format-date today)
+                                                      :k_uladis "DPH"
+                                                      :typ_platce "P"
+                                                      :dokument "DP3"
+                                                      :trans "A"
+                                                      :mesic (-> since .getMonth .getValue)
+                                                      :rok (.getYear today)}
+                                                     (select-keys personal-info vetad-dp3-keys))
+                          :content []}
+                         {:tag :VetaP, :attrs (merge {:typ_ds "F"}
+                                                     (select-keys personal-info vetap-keys))
+                          :content []}
+                         {:tag :Veta1, :attrs veta1, :content []}]
+                        (when (some? veta4)
+                          [{:tag :Veta4, :attrs veta4, :content []}])
+                        [{:tag :Veta6, :attrs veta6, :content []}])}]}))
+
+(defn dphkh1-report-xml
+  [{:keys [vetap vetad veta-a4 veta-c today since veta-b3] :as personal-info}]
+  (let [until
+        (.with since
+               (TemporalAdjusters/lastDayOfMonth))]
+    {:tag :Pisemnost
+     :attrs {:nazevSW "EPO MF ČR" :verzeSW "42.7.1"}
+     :content
+     [{:tag :DPHKH1
+       :attrs {:verzePis "03.01"}
+       :content (concat [{:tag :VetaD, :attrs (merge {:dokument "KH1"
+                                                      :k_uladis "DPH"
+                                                      :mesic (-> since .getMonth .getValue)
+                                                      :rok (.getYear today)
+                                                      :zdobd_od (format-date since)
+                                                      :zdobd_do (format-date until)
+                                                      :d_poddp (format-date today)
+                                                      :khdph_forma "B"}
+                                                    (select-keys personal-info vetad-kh1-keys))}
+                         {:tag :VetaP, :attrs (merge {:typ_ds "F"}
+                                                     (select-keys personal-info vetap-keys))}]
+                        (map (fn [row]
+                               {:tag :VetaA4
+                                :attrs (-> row
+                                           (update :dic_odb subs 2)
+                                           (update :dppd format-date))})
+                             veta-a4)
+                        (when veta-b3
+                          [{:tag :VetaB3
+                            :attrs veta-b3}])
+                        [{:tag :VetaC
+                          :attrs veta-c}])}]}))
 
 (defn report-tax-filter
   [now]
@@ -185,15 +267,18 @@
       "sort[order]" "desc"}}))
 
 (defn generate-report
-  [generate-fn {:keys [host username token slug]} personal-data output-path now]
+  [generate-fn {:keys [host username token slug]} personal-data small-costs output-path now]
   (let [{:keys [today since until query]}
         (report-tax-filter now)]
     (->> (get-invoices host [username token] slug query)
          (filter-by-taxable-fulfillment-due since until)
-         (generate-fn personal-data today since)
+         (generate-fn personal-data today since small-costs)
          xml/emit-str
          (spit output-path))
     output-path))
 
 (def generate-dphdp3-report
   (partial generate-report (comp dphdp3-report-xml dphdp3-report)))
+
+(def generate-dphkh1-report
+  (partial generate-report (comp dphkh1-report-xml dphkh1-report)))
