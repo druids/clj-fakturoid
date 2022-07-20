@@ -6,7 +6,8 @@
 
   :dependencies [[clj-http "3.7.0"]
                  [com.cemerick/url "0.1.1"]
-                 [cheshire "5.8.0"]]
+                 [cheshire "5.8.0"]
+                 [org.clojure/data.xml "0.2.0-alpha6"]]
 
   :profiles {:dev {:plugins [[lein-cloverage "1.0.10"]
                              [lein-kibit "0.1.6"]]
